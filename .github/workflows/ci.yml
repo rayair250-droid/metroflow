@@ -18,15 +18,21 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install
+      - name: Install (with dev + animate extras)
         run: |
           python -m pip install --upgrade pip
-          pip install .
-          pip install pytest
+          pip install -e ".[dev,animate]"
+      - name: Lint (ruff)
+        run: ruff check metroflow/ tests/
+      - name: Type-check (mypy)
+        run: mypy metroflow/
       - name: Run tests
         env:
           MPLBACKEND: Agg
         run: pytest -q
       - name: Smoke-test the CLI
+        env:
+          MPLBACKEND: Agg
         run: |
-          python -m metroflow compare --scenario scenarios/rush_incident.yaml --seed 42
+          python -m metroflow compare --scenario scenarios/rush_incident.yaml \
+            --seed 42 --controllers baseline,reactive,predictive
