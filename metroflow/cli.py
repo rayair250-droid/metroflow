@@ -222,6 +222,26 @@ def _cmd_gtfs_info(args) -> int:
     return 0
 
 
+def _cmd_gtfs_export(args) -> int:
+    from metroflow.gtfs import export_scenario
+
+    text = export_scenario(
+        args.directory,
+        args.route,
+        args.direction,
+        base_scenario=args.base,
+        name=args.name,
+        source_note=args.source or "",
+    )
+    if args.out:
+        with open(args.out, "w", encoding="utf-8") as fh:
+            fh.write(text)
+        print(f"Wrote scenario: {args.out}")
+    else:
+        print(text, end="")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="metroflow",
@@ -304,6 +324,19 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_gtfs.add_argument("directory", help="path to a GTFS feed directory")
     p_gtfs.set_defaults(func=_cmd_gtfs_info)
+
+    p_gexp = sub.add_parser(
+        "gtfs-export",
+        help="write a scenario YAML whose line (stations, run-times) comes from a GTFS feed",
+    )
+    p_gexp.add_argument("directory", help="path to a GTFS feed directory")
+    p_gexp.add_argument("--route", required=True, help="GTFS route_id to export")
+    p_gexp.add_argument("--direction", type=int, default=0, help="GTFS direction_id")
+    p_gexp.add_argument("--base", default=None, help="base scenario YAML for demand/incidents")
+    p_gexp.add_argument("--name", default=None, help="scenario name (default gtfs_<route>)")
+    p_gexp.add_argument("--out", default=None, help="output file (default: print to stdout)")
+    p_gexp.add_argument("--source", default=None, help="source/licence note for the header")
+    p_gexp.set_defaults(func=_cmd_gtfs_export)
 
     return parser
 

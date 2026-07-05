@@ -253,9 +253,7 @@ def _from_dict(cls: type, data: dict[str, Any]) -> Any:
     if not is_dataclass(cls):
         return data
     if not isinstance(data, dict):
-        raise ConfigError(
-            f"Expected a mapping for {cls.__name__}, got {type(data).__name__}"
-        )
+        raise ConfigError(f"Expected a mapping for {cls.__name__}, got {type(data).__name__}")
     # Resolve string annotations (from `__future__ annotations`) to real types.
     hints = typing.get_type_hints(cls)
     kwargs: dict[str, Any] = {}

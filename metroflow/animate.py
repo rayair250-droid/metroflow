@@ -37,9 +37,7 @@ _STATION_COLOR = "#5a5a5a"
 
 # Muted green -> amber -> red scale for platform-queue severity. Kept desaturated
 # so the figure still reads as a sober engineering schematic, not a heatmap poster.
-_SEVERITY_CMAP = LinearSegmentedColormap.from_list(
-    "mf_severity", ["#3f7d54", "#c9a227", "#a83232"]
-)
+_SEVERITY_CMAP = LinearSegmentedColormap.from_list("mf_severity", ["#3f7d54", "#c9a227", "#a83232"])
 
 
 class PillowMissingError(RuntimeError):
@@ -535,16 +533,34 @@ def render_comparison_animation(
     # Thin shared legend across the bottom.
     legend_handles = [
         Line2D(
-            [0], [0], marker="o", color="none", markerfacecolor=_UP_COLOR,
-            markeredgecolor=_UP_COLOR, markersize=6, label="train (up)",
+            [0],
+            [0],
+            marker="o",
+            color="none",
+            markerfacecolor=_UP_COLOR,
+            markeredgecolor=_UP_COLOR,
+            markersize=6,
+            label="train (up)",
         ),
         Line2D(
-            [0], [0], marker="o", color="none", markerfacecolor="none",
-            markeredgecolor=_DOWN_COLOR, markersize=6, label="train (down)",
+            [0],
+            [0],
+            marker="o",
+            color="none",
+            markerfacecolor="none",
+            markeredgecolor=_DOWN_COLOR,
+            markersize=6,
+            label="train (down)",
         ),
         Line2D(
-            [0], [0], marker="*", color="none", markerfacecolor=_INJECT_COLOR,
-            markeredgecolor=_INJECT_COLOR, markersize=9, label="reserve injected",
+            [0],
+            [0],
+            marker="*",
+            color="none",
+            markerfacecolor=_INJECT_COLOR,
+            markeredgecolor=_INJECT_COLOR,
+            markersize=9,
+            label="reserve injected",
         ),
         Line2D([0], [0], color=_SEVERITY_CMAP(0.15), lw=4, label="queue: low"),
         Line2D([0], [0], color=_SEVERITY_CMAP(0.95), lw=4, label="queue: saturated"),
@@ -591,18 +607,41 @@ def render_comparison_animation(
                 down_x.append(x)
         if up_x:
             dyn.append(
-                ax.scatter(up_x, [track_y + 0.16] * len(up_x), s=30, marker="o",
-                           facecolors=_UP_COLOR, edgecolors=_UP_COLOR, linewidths=1.0, zorder=4)
+                ax.scatter(
+                    up_x,
+                    [track_y + 0.16] * len(up_x),
+                    s=30,
+                    marker="o",
+                    facecolors=_UP_COLOR,
+                    edgecolors=_UP_COLOR,
+                    linewidths=1.0,
+                    zorder=4,
+                )
             )
         if down_x:
             dyn.append(
-                ax.scatter(down_x, [track_y - 0.16] * len(down_x), s=30, marker="o",
-                           facecolors="none", edgecolors=_DOWN_COLOR, linewidths=1.0, zorder=4)
+                ax.scatter(
+                    down_x,
+                    [track_y - 0.16] * len(down_x),
+                    s=30,
+                    marker="o",
+                    facecolors="none",
+                    edgecolors=_DOWN_COLOR,
+                    linewidths=1.0,
+                    zorder=4,
+                )
             )
         if inj_x:
             dyn.append(
-                ax.scatter(inj_x, inj_y, s=62, marker="*", facecolors=_INJECT_COLOR,
-                           edgecolors=_INJECT_COLOR, zorder=4)
+                ax.scatter(
+                    inj_x,
+                    inj_y,
+                    s=62,
+                    marker="*",
+                    facecolors=_INJECT_COLOR,
+                    edgecolors=_INJECT_COLOR,
+                    zorder=4,
+                )
             )
         # injection flash + label (predictive panel only)
         if show_injection:
@@ -610,12 +649,26 @@ def render_comparison_animation(
                 if t - frame_dt <= it <= t + frame_dt:
                     sx = coords[min(inj_stations[it], n_stations - 1)]
                     dyn.append(
-                        ax.scatter([sx], [track_y + 0.34], s=150, marker="*",
-                                   facecolors=_INJECT_COLOR, edgecolors="none", zorder=5)
+                        ax.scatter(
+                            [sx],
+                            [track_y + 0.34],
+                            s=150,
+                            marker="*",
+                            facecolors=_INJECT_COLOR,
+                            edgecolors="none",
+                            zorder=5,
+                        )
                     )
                     dyn.append(
-                        ax.text(sx, track_y + 0.44, "reserve injected", ha="center",
-                                fontsize=6.5, color=_INJECT_COLOR, zorder=5)
+                        ax.text(
+                            sx,
+                            track_y + 0.44,
+                            "reserve injected",
+                            ha="center",
+                            fontsize=6.5,
+                            color=_INJECT_COLOR,
+                            zorder=5,
+                        )
                     )
 
     def update(fi: int):

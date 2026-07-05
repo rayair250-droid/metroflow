@@ -132,3 +132,55 @@ def test_simulate_end_to_end_from_gtfs():
     assert summary["controller"] == "predictive"
     assert summary["passengers_generated"] > 0
     assert "total_denied_boardings" in summary
+
+
+# ---------------------------------------------------------------------------
+# gtfs-export: scenario files generated from a feed
+# ---------------------------------------------------------------------------
+
+
+def test_export_scenario_roundtrip(tmp_path):
+    """An exported scenario must reload into the exact same line."""
+    from metroflow.gtfs import export_scenario
+
+    text = export_scenario(str(SAMPLE), "M1", 0, name="sample_m1", source_note="unit test")
+    out = tmp_path / "sample_m1.yaml"
+    out.write_text(text, encoding="utf-8")
+
+    cfg = load_config(str(out))
+    assert cfg.name == "sample_m1"
+    assert cfg.line.n_stations == 6
+    assert cfg.line.station_names == EXPECTED
+    # The honesty header must state what is real vs synthetic.
+    assert "REAL (timetable-derived)" in text
+    assert "SYNTHETIC" in text
+    assert "unit test" in text
+
+
+def test_export_scenario_simulates(tmp_path):
+    """A generated scenario must run end-to-end like any hand-written one."""
+    from metroflow.gtfs import export_scenario
+
+    out = tmp_path / "m1.yaml"
+    out.write_text(export_scenario(str(SAMPLE), "M1", 0), encoding="utf-8")
+    cfg = load_config(str(out))
+    cfg.horizon = 1200.0
+    sim = run_simulation(cfg, "predictive", 42)
+    assert sim.summary()["passengers_generated"] > 0
+
+
+def test_cli_gtfs_export_writes_file(tmp_path):
+    out = tmp_path / "exported.yaml"
+    proc = _run_cli(
+        ["gtfs-export", str(SAMPLE), "--route", "M1", "--direction", "0", "--out", str(out)]
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert out.exists()
+    cfg = load_config(str(out))
+    assert cfg.line.n_stations == 6
+
+
+def test_cli_gtfs_export_unknown_route_fails_cleanly():
+    proc = _run_cli(["gtfs-export", str(SAMPLE), "--route", "NOPE"])
+    assert proc.returncode == 2
+    assert "error:" in proc.stderr

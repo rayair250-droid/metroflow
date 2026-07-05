@@ -7,3 +7,4 @@ out/
 .mypy_cache/
 build/
 dist/
+data/

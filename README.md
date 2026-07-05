@@ -184,11 +184,45 @@ metroflow gtfs-info data/idfm_gtfs
 metroflow simulate --gtfs data/idfm_gtfs --route <route_id> --direction 0
 ```
 
+You can also **freeze** a feed's route into a self-contained scenario file with
+`gtfs-export` — the line (station list and per-segment run-times averaged over
+every trip in the timetable) is real; demand, incidents and fleet are inherited
+from the base scenario and stay synthetic (GTFS describes service, not
+passenger counts — the generated header states exactly which is which):
+
+```bash
+metroflow gtfs-export data/tisseo_gtfs --route line:61 --direction 0 \
+    --name toulouse_line_a --source "GTFS Tisséo, data.gouv.fr, ODbL" \
+    --out scenarios/toulouse_line_a.yaml
+```
+
+### Real metro lines shipped as scenarios
+
+Four ready-to-run scenarios were generated this way from real French open-data
+GTFS feeds (Licence ODbL, via [transport.data.gouv.fr](https://transport.data.gouv.fr)):
+
+| Scenario | Line | Stations | Feed |
+|---|---|---|---|
+| [`toulouse_line_a.yaml`](scenarios/toulouse_line_a.yaml) | Toulouse Métro **A** (Basso Cambo → Balma-Gramont) | 18 | Réseau urbain Tisséo |
+| [`toulouse_line_b.yaml`](scenarios/toulouse_line_b.yaml) | Toulouse Métro **B** (Ramonville → Borderouge) | 20 | Réseau urbain Tisséo |
+| [`rennes_line_a.yaml`](scenarios/rennes_line_a.yaml) | Rennes Métro **a** (J.F. Kennedy → La Poterie) | 15 | Réseau urbain STAR |
+| [`rennes_line_b.yaml`](scenarios/rennes_line_b.yaml) | Rennes Métro **b** (Cesson-Viasilva → Saint-Jacques - Gaîté) | 15 | Réseau urbain STAR |
+
+```bash
+metroflow compare --scenario scenarios/toulouse_line_a.yaml --seed 42
+```
+
+Station lists and run-times in those files are timetable-derived; the demand
+profiles are **not** real ridership. `scenarios/paris_line1.yaml` remains a
+hand-calibrated approximation (see its header).
+
 Real open-data sources (cited in `metroflow/gtfs.py`):
 
 - Île-de-France Mobilités (IDFM), via transport.data.gouv.fr:
   <https://transport.data.gouv.fr/datasets/reseau-urbain-et-interurbain-dile-de-france-mobilites>
 - RATP open data: <https://www.ratp.fr/en/ratp-and-open-data>
+- Réseau urbain Tisséo (Toulouse) and Réseau urbain STAR (Rennes), via
+  <https://transport.data.gouv.fr> (Licence ODbL)
 
 ### Example comparison output
 
