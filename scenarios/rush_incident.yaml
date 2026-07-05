@@ -1,0 +1,51 @@
+# MetroFlow heavy scenario: sharper demand, a shorter fleet-limited window and
+# frequent incidents (breakdowns, signal failures, door events, surges). This is
+# where injection strategies matter most.
+name: rush_incident
+horizon: 10800
+seed: 42
+n_initial_trains: 6
+depot_reserve: 5
+target_headway: 320
+train_capacity: 200
+control_interval: 60
+sample_interval: 60
+
+line:
+  n_stations: 12
+  segment_time: 95
+  runtime_noise: 0.10
+  dwell_base: 18
+  dwell_per_pax: 0.5
+  dwell_noise: 4
+  depot_station: 0
+
+demand:
+  arrival_scale: 0.07
+  baseline_frac: 0.30
+  bin_seconds: 15
+  peaks:
+    - {center: 6000, width: 1800, amplitude: 1.5}
+    - {center: 9000, width: 1500, amplitude: 1.1}
+
+incidents:
+  enabled: true
+  check_interval: 90
+  breakdown_prob: 0.020
+  breakdown_repair: 900
+  signal_prob: 0.030
+  signal_slowdown: 2.0
+  signal_duration: 600
+  dwell_event_prob: 0.030
+  dwell_event_extra: 75
+  surge_prob: 0.020
+  surge_multiplier: 8.0
+  surge_duration: 900
+
+controller:
+  queue_threshold: 100
+  horizon: 360
+  ewma_alpha: 0.4
+  predictive_fraction: 0.55
+  min_injection_gap: 240
+  min_headway: 120

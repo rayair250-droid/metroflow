@@ -1,0 +1,7 @@
+stop_id,stop_name,stop_lat,stop_lon
+S1,Riverside,48.8500,2.2900
+S2,Market,48.8555,2.3050
+S3,Central,48.8600,2.3200
+S4,University,48.8650,2.3360
+S5,Parkway,48.8700,2.3520
+S6,Airport,48.8760,2.3700

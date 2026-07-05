@@ -1,0 +1,49 @@
+# MetroFlow default scenario: a 12-station line over a 3-hour morning window
+# with a single rush peak. Incidents are enabled but mild.
+name: default
+horizon: 10800          # 3 hours (seconds)
+seed: 42
+n_initial_trains: 6
+depot_reserve: 4
+target_headway: 300     # seconds
+train_capacity: 200
+control_interval: 60
+sample_interval: 60
+
+line:
+  n_stations: 12
+  segment_time: 90
+  runtime_noise: 0.08
+  dwell_base: 18
+  dwell_per_pax: 0.45
+  dwell_noise: 3
+  depot_station: 0
+
+demand:
+  arrival_scale: 0.06
+  baseline_frac: 0.28
+  bin_seconds: 15
+  peaks:
+    - {center: 7200, width: 2400, amplitude: 1.25}
+
+incidents:
+  enabled: true
+  check_interval: 120
+  breakdown_prob: 0.008
+  breakdown_repair: 900
+  signal_prob: 0.015
+  signal_slowdown: 1.8
+  signal_duration: 600
+  dwell_event_prob: 0.015
+  dwell_event_extra: 60
+  surge_prob: 0.008
+  surge_multiplier: 6.0
+  surge_duration: 900
+
+controller:
+  queue_threshold: 90
+  horizon: 300
+  ewma_alpha: 0.35
+  predictive_fraction: 0.6
+  min_injection_gap: 300
+  min_headway: 120

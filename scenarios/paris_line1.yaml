@@ -1,0 +1,150 @@
+# =============================================================================
+# MetroFlow scenario: Paris Metro Line 1 (ILLUSTRATIVE / APPROXIMATE)
+# -----------------------------------------------------------------------------
+# A calibrated-shape scenario approximating RATP Metro Line 1. Every real-world
+# figure below is APPROXIMATE and used for illustration only; none is a precise
+# operational value and the per-station demand is a *shaped profile*, not real
+# counts. Structure it so real open data can be dropped in (see notes).
+#
+# Sources for the approximate line facts (public):
+#   - Wikipedia, "Paris Metro Line 1": 25 stations; ~16.6 km; fully automated
+#     (GoA4, driverless) since 2012; MP 05 rolling stock; peak headways down to
+#     ~85 s. https://en.wikipedia.org/wiki/Paris_M%C3%A9tro_Line_1
+#   - RATP open data, "Trafic annuel entrant par station du reseau ferre"
+#     (annual entries per station) is the dataset a user would substitute for
+#     the illustrative `origin_weights` below to calibrate real demand shape.
+#     https://data.ratp.fr/  (dataset: trafic-annuel-entrant-par-station-...)
+#
+# What is approximate here and why:
+#   - n_stations (25), length (~16.6 km => ~692 m mean interstation) and the
+#     station names are public facts.
+#   - segment_time (~75 s) implies a ~9.2 m/s running speed (~33 km/h), a
+#     plausible metro average; treat as approximate.
+#   - train_capacity (~700) is the order-of-magnitude capacity of an MP 05
+#     trainset; treat as approximate.
+#   - target_headway (110 s) and fleet size are set to a demanding peak; the
+#     real minimum is shorter. Approximate.
+#   - arrival_scale and origin_weights are ILLUSTRATIVE: a smooth central bulge
+#     with bumps at the major interchanges (Etoile, Chatelet, Gare de Lyon,
+#     Nation, La Defense). Replace `origin_weights` with normalised RATP annual
+#     entries to calibrate against real demand.
+# =============================================================================
+name: paris_line1
+horizon: 5400          # 90-minute peak window (s)
+seed: 42
+n_initial_trains: 34   # approximate peak fleet on the line
+depot_reserve: 6
+target_headway: 110    # s; demanding peak (real minimum is shorter) - approx
+train_capacity: 700    # approx MP 05 trainset capacity - APPROXIMATE
+control_interval: 90
+sample_interval: 60
+regularity_tolerance: 0.5
+
+line:
+  n_stations: 25
+  segment_length: 692  # m; 16.6 km / 24 gaps - APPROXIMATE mean interstation
+  segment_time: 75     # s; implies ~9.2 m/s (~33 km/h) running - APPROXIMATE
+  runtime_noise: 0.08
+  dwell_base: 20
+  dwell_per_pax: 0.30
+  dwell_noise: 3
+  depot_station: 0
+  station_names:
+    - La Defense                       # major interchange (RER A, tram)
+    - Esplanade de la Defense
+    - Pont de Neuilly
+    - Les Sablons
+    - Porte Maillot
+    - Argentine
+    - Charles de Gaulle - Etoile       # interchange (RER A, M2, M6)
+    - George V
+    - Franklin D. Roosevelt            # interchange (M9)
+    - Champs-Elysees - Clemenceau
+    - Concorde                         # interchange (M8, M12)
+    - Tuileries
+    - Palais Royal - Musee du Louvre   # interchange (M7)
+    - Louvre - Rivoli
+    - Chatelet                         # major interchange (M4/7/11/14, RER)
+    - Hotel de Ville
+    - Saint-Paul
+    - Bastille                         # interchange (M5, M8)
+    - Gare de Lyon                     # major interchange (RER A/D, mainline)
+    - Reuilly - Diderot
+    - Nation                           # major interchange (M2/6/9, RER A)
+    - Porte de Vincennes
+    - Saint-Mande
+    - Berault
+    - Chateau de Vincennes
+
+demand:
+  # ILLUSTRATIVE peak scale (passengers/second base). Absolute passenger totals
+  # are not calibrated; the value is chosen to stress the line at peak so that
+  # the controllers face a non-trivial denied-boarding problem.
+  arrival_scale: 0.16
+  baseline_frac: 0.55
+  bin_seconds: 15
+  peaks:
+    - {center: 2400, width: 1500, amplitude: 1.2}
+  # ILLUSTRATIVE origin weights: smooth central bulge with interchange bumps.
+  # Replace with normalised RATP "trafic annuel entrant par station" to use real
+  # demand shape. Index order matches `station_names` above.
+  origin_weights:
+    - 1.7   # La Defense (interchange)
+    - 0.7
+    - 0.8
+    - 0.8
+    - 1.0
+    - 0.9
+    - 1.6   # Etoile (interchange)
+    - 1.0
+    - 1.2   # F. D. Roosevelt
+    - 1.0
+    - 1.3   # Concorde
+    - 0.9
+    - 1.2   # Palais Royal - Louvre
+    - 0.9
+    - 1.9   # Chatelet (major interchange)
+    - 1.0
+    - 0.9
+    - 1.3   # Bastille
+    - 1.7   # Gare de Lyon (major interchange)
+    - 0.9
+    - 1.6   # Nation (major interchange)
+    - 0.8
+    - 0.7
+    - 0.7
+    - 1.1   # Chateau de Vincennes (terminus)
+
+incidents:
+  enabled: true
+  check_interval: 120
+  breakdown_prob: 0.006
+  breakdown_repair: 720
+  signal_prob: 0.012
+  signal_slowdown: 1.6
+  signal_duration: 480
+  dwell_event_prob: 0.020
+  dwell_event_extra: 45
+  surge_prob: 0.010
+  surge_multiplier: 4.0
+  surge_duration: 600
+
+controller:
+  queue_threshold: 140
+  horizon: 360
+  ewma_alpha: 0.4
+  predictive_fraction: 0.55
+  min_injection_gap: 200
+  min_headway: 90
+  opt_horizon_steps: 5
+  opt_step_seconds: 110
+  opt_max_solve_seconds: 2.0
+
+signalling:
+  mode: moving_block   # Line 1 runs CBTC-style automatic train operation (GoA4)
+  max_speed_mps: 18.0
+  service_decel_mps2: 1.0
+  safety_margin_m: 40.0
+  reaction_time_s: 1.5
+  train_length_m: 90.0
+  enforce: true

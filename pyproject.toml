@@ -1,0 +1,82 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "metroflow"
+version = "0.4.0"
+description = "Discrete-event metro-line simulator with CBTC safe-separation signalling, MILP reserve-train dispatch, and statistical validation."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Rayan HADDOUM" }]
+keywords = ["simulation", "discrete-event", "simpy", "metro", "transit", "operations-research"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Simulation",
+]
+dependencies = [
+    "simpy>=4.0",
+    "numpy>=1.24",
+    "matplotlib>=3.6",
+    "pyyaml>=6.0",
+    "ortools>=9.8",
+    "scipy>=1.10",
+    "pillow>=9.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.5",
+    "mypy>=1.8",
+    "hypothesis>=6.0",
+]
+animate = ["pillow>=9.0"]
+
+[project.scripts]
+metroflow = "metroflow.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["metroflow*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+# E/W (pycodestyle), F (pyflakes), I (isort), B (bugbear), UP (pyupgrade).
+select = ["E", "W", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+# Assertions and re-imports are idiomatic in tests.
+"tests/*" = ["B011"]
+
+[tool.mypy]
+# 3.12 so mypy can parse the installed numpy type stubs (which use PEP 695
+# syntax); the MetroFlow source itself remains 3.11-compatible at runtime.
+python_version = "3.12"
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+# Third-party libraries without type stubs. The MetroFlow code itself is fully
+# type-checked; only these external imports are exempted from stub resolution.
+[[tool.mypy.overrides]]
+module = [
+    "ortools.*",
+    "simpy.*",
+    "matplotlib.*",
+    "yaml.*",
+    "scipy.*",
+    "PIL.*",
+]
+ignore_missing_imports = true
