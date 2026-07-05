@@ -12,7 +12,7 @@ from metroflow.config import LineConfig, SimConfig
 
 pytest.importorskip("PIL", reason="Pillow is required to write the animation GIF")
 
-from metroflow.animate import render_animation  # noqa: E402
+from metroflow.animate import render_animation, render_comparison_animation  # noqa: E402
 
 GIF_MAGIC = (b"GIF87a", b"GIF89a")
 
@@ -46,6 +46,26 @@ def test_render_is_deterministic(tmp_path):
     b = tmp_path / "b.gif"
     render_animation(cfg, "baseline", 7, str(a), seconds=1.0, fps=4)
     render_animation(_tiny_config(), "baseline", 7, str(b), seconds=1.0, fps=4)
+    assert a.read_bytes() == b.read_bytes()
+
+
+def test_comparison_produces_valid_gif(tmp_path):
+    out = tmp_path / "compare.gif"
+    cfg = _tiny_config()
+    path = render_comparison_animation(cfg, seed=42, out_path=str(out), seconds=1.0, fps=4)
+    p = Path(path)
+    assert p.exists()
+    data = p.read_bytes()
+    assert len(data) > 0
+    assert data[:6] in GIF_MAGIC  # valid GIF header
+    assert len(data) < 5 * 1024 * 1024  # comfortably under 5 MB
+
+
+def test_comparison_is_deterministic(tmp_path):
+    a = tmp_path / "a.gif"
+    b = tmp_path / "b.gif"
+    render_comparison_animation(_tiny_config(), 7, str(a), seconds=1.0, fps=4)
+    render_comparison_animation(_tiny_config(), 7, str(b), seconds=1.0, fps=4)
     assert a.read_bytes() == b.read_bytes()
 
 

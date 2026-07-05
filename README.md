@@ -4,6 +4,17 @@ MetroFlow — a discrete-event metro-line simulator with CBTC-style safe-separat
 signalling, stochastic incidents, and reserve-train dispatch by heuristic *and*
 mixed-integer optimisation, with Monte-Carlo validation.
 
+![MetroFlow baseline vs predictive comparison](examples/comparison_animation.gif)
+
+*The core idea, side by side (heavy `rush_incident` scenario, seed 42). **Both
+panels run the same seed**, so passenger arrivals and incidents are identical —
+only the dispatch strategy differs. Top: a fixed **baseline** that never adds
+trains. Bottom: **predictive reserve-train injection** (green stars mark reserves
+entering service). Platform-queue bars share a green→amber→red severity scale, and
+each panel's live **denied-boardings** counter shows the baseline racing ahead
+while predictive stays far lower. Same run, one mechanism, a visible gap.
+Regenerate with `metroflow animate --compare` or `examples/generate_examples.py`.*
+
 ![MetroFlow line animation](examples/line_animation.gif)
 
 *A sober schematic of one run (default scenario, predictive controller): stations
@@ -121,15 +132,27 @@ a brief green-star marker; a clock labels the time.
 ```bash
 metroflow animate --scenario scenarios/default.yaml --controller predictive \
     --seed 42 --out out/run.gif --seconds 8 --fps 10
+
+# split-screen: baseline vs predictive on the same seed (the hero GIF above)
+metroflow animate --scenario scenarios/rush_incident.yaml --compare \
+    --seed 42 --out out/comparison.gif --seconds 7 --fps 8
 ```
 
+The `--compare` flag renders the split-screen story shown at the top: two stacked
+panels (baseline on top, predictive below) driven by the **same seed**, so
+arrivals and incidents are identical and only the dispatch differs. Queue bars use
+a shared green→amber→red severity scale and each panel carries a live
+denied-boardings counter, making the mechanism's effect legible frame by frame.
+
 It uses matplotlib's `FuncAnimation` with the Pillow writer on the headless `Agg`
-backend. The GIF is intentionally small (low resolution, few downsampled frames —
-the committed example is ~0.2 MB). Pillow is imported lazily, so the core
-simulator works without it; the `animate` command prints a clear message if
-Pillow is missing (`pip install pillow`, or `pip install -e .[animate]`). The
-committed [`examples/line_animation.gif`](examples/line_animation.gif) (shown at
-the top) is produced by `examples/generate_examples.py`.
+backend. The GIFs are intentionally small (low resolution, few downsampled frames —
+the committed single-run example is ~0.2 MB and the two-panel comparison ~0.4 MB).
+Pillow is imported lazily, so the core simulator works without it; the `animate`
+command prints a clear message if Pillow is missing (`pip install pillow`, or
+`pip install -e .[animate]`). The committed
+[`examples/comparison_animation.gif`](examples/comparison_animation.gif) (the hero
+image) and [`examples/line_animation.gif`](examples/line_animation.gif) are both
+produced by `examples/generate_examples.py`.
 
 ## Building a line from GTFS
 

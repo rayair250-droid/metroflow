@@ -133,6 +133,20 @@ def main() -> int:
     except Exception as exc:  # pragma: no cover - pillow optional
         print(f"(animation skipped: {exc})")
 
+    # --- split-screen comparison animation (GIF, README hero) ------------- #
+    try:
+        from metroflow.animate import render_comparison_animation
+
+        # The rush_incident scenario makes the baseline-vs-predictive contrast
+        # (saturation relief, denied-boardings gap) clearly visible.
+        ccfg = load_config(SCENARIO)
+        ccfg.seed = args.seed
+        cgif = os.path.join(args.outdir, "comparison_animation.gif")
+        render_comparison_animation(ccfg, args.seed, cgif, seconds=7, fps=8)
+        written.append(cgif)
+    except Exception as exc:  # pragma: no cover - pillow optional
+        print(f"(comparison animation skipped: {exc})")
+
     print(format_comparison(summaries))
     print("\nWrote:")
     for p in written:

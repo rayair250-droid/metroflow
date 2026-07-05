@@ -191,17 +191,27 @@ def _cmd_animate(args) -> int:
     cfg = _load(args.scenario, args.seed)
     _maybe_apply_gtfs(cfg, args)
     try:
-        from metroflow.animate import PillowMissingError, animate_from_config
+        from metroflow.animate import (
+            PillowMissingError,
+            animate_from_config,
+            comparison_from_config,
+        )
     except Exception as exc:  # pragma: no cover - import guard
         print(f"Animation unavailable: {exc}")
         return 1
     try:
-        out = animate_from_config(cfg, args.controller, args.seed, args.out, args.seconds, args.fps)
+        if args.compare:
+            out = comparison_from_config(cfg, args.seed, args.out, args.seconds, args.fps)
+        else:
+            out = animate_from_config(
+                cfg, args.controller, args.seed, args.out, args.seconds, args.fps
+            )
     except PillowMissingError as exc:
         print(str(exc))
         return 1
     size = os.path.getsize(out)
-    print(f"Wrote animation: {out} ({size} bytes, {size / 1e6:.2f} MB)")
+    kind = "comparison animation" if args.compare else "animation"
+    print(f"Wrote {kind}: {out} ({size} bytes, {size / 1e6:.2f} MB)")
     return 0
 
 
@@ -275,6 +285,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_anim.add_argument("--controller", default="predictive", choices=available_controllers())
     p_anim.add_argument("--seed", type=int, default=None)
     p_anim.add_argument("--out", default="out/run.gif", help="output GIF path")
+    p_anim.add_argument(
+        "--compare",
+        action="store_true",
+        help="split-screen baseline vs predictive on the same seed (two stacked "
+        "panels showing reserve-train injection cutting denied boardings); "
+        "ignores --controller",
+    )
     p_anim.add_argument("--seconds", type=float, default=8.0, help="target GIF playback length (s)")
     p_anim.add_argument("--fps", type=int, default=10, help="frames per second")
     p_anim.add_argument("--gtfs", default=None, help="build the line from a GTFS feed")
