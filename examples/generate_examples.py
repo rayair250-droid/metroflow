@@ -137,9 +137,20 @@ def main() -> int:
     try:
         from metroflow.animate import render_comparison_animation
 
-        # The rush_incident scenario makes the baseline-vs-predictive contrast
-        # (saturation relief, denied-boardings gap) clearly visible.
-        ccfg = load_config(SCENARIO)
+        # Hero setup: the REAL Toulouse Metro A geometry (18 stations, Basso
+        # Cambo -> Balma-Gramont, timetable-derived run-times) stressed with
+        # the rush_incident demand intensity and incident rates, so the
+        # baseline-vs-predictive contrast (saturation relief, denied-boardings
+        # gap) is clearly visible. Chosen deliberately: depot injection helps
+        # short/medium metro lines; on long lines (RER B, 40 stations) it can
+        # be counterproductive — see the README's honest-limits note.
+        ccfg = load_config(os.path.join(ROOT, "scenarios", "toulouse_line_a.yaml"))
+        stress = load_config(SCENARIO)  # rush_incident
+        ccfg.demand.arrival_scale = stress.demand.arrival_scale
+        ccfg.demand.baseline_frac = stress.demand.baseline_frac
+        ccfg.demand.peaks = stress.demand.peaks
+        ccfg.incidents = stress.incidents
+        ccfg.depot_reserve = stress.depot_reserve
         ccfg.seed = args.seed
         cgif = os.path.join(args.outdir, "comparison_animation.gif")
         render_comparison_animation(ccfg, args.seed, cgif, seconds=7, fps=8)

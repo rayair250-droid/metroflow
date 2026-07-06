@@ -199,3 +199,19 @@ def test_load_feed_route_filter_matches_full_load():
     # Stops/routes stay complete (labels, gtfs-info).
     assert filtered.stops == full.stops
     assert [r["route_id"] for r in filtered.routes] == [r["route_id"] for r in full.routes]
+
+
+def test_export_scenario_with_demand_profile(tmp_path):
+    from metroflow.gtfs import export_scenario
+
+    text = export_scenario(str(SAMPLE), "M1", 0, demand_profile="rer_bidirectional")
+    out = tmp_path / "m1_rer.yaml"
+    out.write_text(text, encoding="utf-8")
+    cfg = load_config(str(out))
+    assert cfg.demand.profile == "rer_bidirectional"
+    assert "rer_bidirectional" in text  # declared in the header too
+
+    from metroflow.errors import ConfigError
+
+    with pytest.raises(ConfigError):  # unknown profile rejected at export time
+        export_scenario(str(SAMPLE), "M1", 0, demand_profile="teleportation")

@@ -6,14 +6,16 @@ mixed-integer optimisation, with Monte-Carlo validation.
 
 ![MetroFlow baseline vs predictive comparison](examples/comparison_animation.gif)
 
-*The core idea, side by side (heavy `rush_incident` scenario, seed 42). **Both
-panels run the same seed**, so passenger arrivals and incidents are identical —
-only the dispatch strategy differs. Top: a fixed **baseline** that never adds
-trains. Bottom: **predictive reserve-train injection** (green stars mark reserves
-entering service). Platform-queue bars share a green→amber→red severity scale, and
-each panel's live **denied-boardings** counter shows the baseline racing ahead
-while predictive stays far lower. Same run, one mechanism, a visible gap.
-Regenerate with `metroflow animate --compare` or `examples/generate_examples.py`.*
+*The core idea, side by side, on the **real Toulouse Métro A** (18 stations,
+Basso Cambo → Balma-Gramont, run-times derived from the Tisséo GTFS feed),
+stressed with the `rush_incident` demand intensity and incident rates (seed 42).
+**Both panels run the same seed**, so passenger arrivals and incidents are
+identical — only the dispatch strategy differs. Top: a fixed **baseline** that
+never adds trains. Bottom: **predictive reserve-train injection** (green stars
+mark reserves entering service). Platform-queue bars share a green→amber→red
+severity scale, and each panel's live **denied-boardings** counter shows the
+baseline racing ahead while predictive stays far lower. Same run, one mechanism,
+a visible gap. Regenerate with `examples/generate_examples.py`.*
 
 ![MetroFlow line animation](examples/line_animation.gif)
 
@@ -236,6 +238,48 @@ models a single corridor: the export picks the feed's most complete trip, i.e.
 **one** branch combination — the scenario header names the exact termini.
 `scenarios/paris_line1.yaml` remains a hand-calibrated approximation (see its
 header).
+
+### Demand profiles by line type
+
+GTFS says nothing about ridership, but different line types have recognisably
+different *shapes* of demand. `demand.profile` (or `gtfs-export
+--demand-profile`) selects a named synthetic shape that adapts to any station
+count:
+
+| Profile | Origins | Attraction | Typical use |
+|---|---|---|---|
+| `metro_commuter` (default) | mild central bulge | strong city-core pull | urban metro |
+| `rer_bidirectional` | outer suburbs, **both** sides | central trunk | RER — the morning flood converging on the centre from both directions |
+| `intercity_endpoint` | termini | termini | Intercités / TER — most passengers ride end to end |
+
+The shipped RER scenarios use `rer_bidirectional`; the Intercités/TER ones use
+`intercity_endpoint`. Explicit `origin_weights` / `attraction_weights` always
+override the profile. These are plausible shapes for stress-testing dispatch
+strategies, **not** measured origin-destination data.
+
+### When does predictive injection help? (honest limits)
+
+Running the same stress test across the real lines (the hero-GIF overlay from
+`examples/generate_examples.py`: `rush_incident` demand intensity, incident
+rates and reserve pool applied to each scenario, seed 42) shows the strategy's
+domain — and its boundary:
+
+| Line | Stations | Denied boardings: baseline → predictive |
+|---|---|---|
+| Toulouse A | 18 | 14 783 → **11 937** (−19 %) |
+| Lille 1 | 18 | 15 359 → **13 456** (−12 %) |
+| Lyon A | 14 | 9 899 → **8 083** (−18 %) |
+| Lille 2 | 44 | 31 047 → 31 735 (**worse**) |
+| RER B | 40 | 25 981 → 46 241 (**much worse**) |
+
+Depot-based reserve injection helps short and medium metro lines, where an
+injected train reaches the saturated stretch within the peak. On long lines
+(40+ stations, ~70-minute end-to-end runs) a train injected at one terminus
+arrives at the far-side queues long after the peak — meanwhile it consumes
+line capacity and degrades headways, so it can make things **worse** than
+doing nothing. That is exactly the kind of boundary a simulator is for;
+fixing it (multiple injection points, short-turning) is future work, not a
+claim.
 
 Real open-data sources (cited in `metroflow/gtfs.py`):
 

@@ -54,3 +54,63 @@ def test_surge_increases_rate():
     assert m.rate(3, 4500.0) == _model().rate(3, 4500.0)
     # A different station is unaffected by the surge.
     assert m.rate(4, t) == _model().rate(4, t)
+
+
+# ---------------------------------------------------------------------------
+# Named spatial demand profiles
+# ---------------------------------------------------------------------------
+
+
+def _model_with_profile(profile, n=21):
+    from metroflow.config import DemandConfig
+    from metroflow.demand import DemandModel
+
+    return DemandModel(DemandConfig(profile=profile), n)
+
+
+def test_profile_default_equals_metro_commuter():
+    import numpy as np
+
+    a = _model_with_profile(None)
+    b = _model_with_profile("metro_commuter")
+    assert np.allclose(a.origin_w, b.origin_w)
+    assert np.allclose(a.attract, b.attract)
+
+
+def test_profile_rer_bidirectional_shape():
+    m = _model_with_profile("rer_bidirectional")
+    mid, end = len(m.origin_w) // 2, 0
+    # Origins: suburbs (both termini) generate more than the centre.
+    assert m.origin_w[end] > m.origin_w[mid]
+    assert m.origin_w[-1] > m.origin_w[mid]
+    # Attraction: the central trunk pulls hardest.
+    assert m.attract[mid] > m.attract[end]
+
+
+def test_profile_intercity_endpoint_shape():
+    m = _model_with_profile("intercity_endpoint")
+    mid = len(m.origin_w) // 2
+    assert m.origin_w[0] > m.origin_w[mid]
+    assert m.attract[0] > m.attract[mid]
+    assert m.attract[-1] > m.attract[mid]
+
+
+def test_profile_unknown_rejected():
+    import pytest
+
+    from metroflow.errors import ConfigError
+
+    with pytest.raises(ConfigError):
+        _model_with_profile("teleportation")
+
+
+def test_profile_explicit_weights_win():
+    import numpy as np
+
+    from metroflow.config import DemandConfig
+    from metroflow.demand import DemandModel
+
+    cfg = DemandConfig(profile="rer_bidirectional", origin_weights=[1.0] * 5)
+    m = DemandModel(cfg, 5)
+    assert np.allclose(m.origin_w, 1.0)  # explicit list overrides the profile
+    assert m.attract[2] > m.attract[0]  # attraction still from the profile

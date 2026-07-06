@@ -80,13 +80,25 @@ class SignallingConfig:
     max_hold_s: float = 600.0
 
 
+#: Valid values for :attr:`DemandConfig.profile` (shapes live in demand.py).
+DEMAND_PROFILES = ("metro_commuter", "rer_bidirectional", "intercity_endpoint")
+
+
 @dataclass
 class DemandConfig:
     """Time-varying, origin/destination-weighted passenger demand."""
 
     #: Peak arrival scale (passengers/second) shared across the line.
     arrival_scale: float = 0.06
-    #: Per-station origin weight. If ``None`` a mild central bulge is generated.
+    #: Named spatial profile shaping origin/attraction weights when they are
+    #: not given explicitly: ``metro_commuter`` (central bulge — also the
+    #: behaviour when unset), ``rer_bidirectional`` (origins in the outer
+    #: suburbs on both sides, attraction at the centre) or
+    #: ``intercity_endpoint`` (terminus-to-terminus travel). Shapes adapt to
+    #: any station count, so GTFS-built lines can use them directly. Still
+    #: synthetic: a profile is a plausible *shape*, not measured ridership.
+    profile: str | None = None
+    #: Per-station origin weight. If ``None`` the profile decides.
     origin_weights: list[float] | None = None
     #: Per-station destination attraction (central stations pull more trips).
     attraction_weights: list[float] | None = None
@@ -367,6 +379,10 @@ def validate_config(cfg: SimConfig) -> SimConfig:
     _require(
         dem.bin_seconds > 0,
         f"demand.bin_seconds must be positive, got {dem.bin_seconds}",
+    )
+    _require(
+        dem.profile is None or dem.profile in DEMAND_PROFILES,
+        f"demand.profile must be one of {sorted(DEMAND_PROFILES)}, got {dem.profile!r}",
     )
 
     ctl = cfg.controller

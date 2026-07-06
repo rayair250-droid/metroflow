@@ -232,6 +232,7 @@ def _cmd_gtfs_export(args) -> int:
         base_scenario=args.base,
         name=args.name,
         source_note=args.source or "",
+        demand_profile=args.demand_profile,
     )
     if args.out:
         with open(args.out, "w", encoding="utf-8") as fh:
@@ -336,6 +337,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_gexp.add_argument("--name", default=None, help="scenario name (default gtfs_<route>)")
     p_gexp.add_argument("--out", default=None, help="output file (default: print to stdout)")
     p_gexp.add_argument("--source", default=None, help="source/licence note for the header")
+    p_gexp.add_argument(
+        "--demand-profile",
+        default=None,
+        choices=["metro_commuter", "rer_bidirectional", "intercity_endpoint"],
+        help="named synthetic spatial demand shape for this line type",
+    )
     p_gexp.set_defaults(func=_cmd_gtfs_export)
 
     return parser

@@ -6,6 +6,9 @@
 # SYNTHETIC (inherited from the base scenario, NOT in GTFS): passenger
 #   demand profile, incident rates, fleet size, controller settings.
 #
+# Demand uses the named 'rer_bidirectional' spatial profile — a plausible
+#   shape for this line type, still synthetic, not measured ridership.
+#
 # Source: GTFS 'SNCF Transilien' (Île-de-France), data.gouv.fr, Licence ODbL, downloaded 2026-07-06
 name: rer_b
 horizon: 10800.0
@@ -110,6 +113,7 @@ line:
   - Saint-Rémy-lès-Chevreuse
 demand:
   arrival_scale: 0.06
+  profile: rer_bidirectional
   origin_weights: null
   attraction_weights: null
   baseline_frac: 0.28

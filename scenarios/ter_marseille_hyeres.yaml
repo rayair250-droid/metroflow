@@ -6,6 +6,9 @@
 # SYNTHETIC (inherited from the base scenario, NOT in GTFS): passenger
 #   demand profile, incident rates, fleet size, controller settings.
 #
+# Demand uses the named 'intercity_endpoint' spatial profile — a plausible
+#   shape for this line type, still synthetic, not measured ridership.
+#
 # Source: GTFS 'Réseau SNCF TGV, Intercités et TER', data.gouv.fr, Licence ODbL, downloaded 2026-07-06
 name: ter_marseille_hyeres
 horizon: 10800.0
@@ -64,6 +67,7 @@ line:
   - Marseille Saint-Charles
 demand:
   arrival_scale: 0.06
+  profile: intercity_endpoint
   origin_weights: null
   attraction_weights: null
   baseline_frac: 0.28
