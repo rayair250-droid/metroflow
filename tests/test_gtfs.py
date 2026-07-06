@@ -184,3 +184,18 @@ def test_cli_gtfs_export_unknown_route_fails_cleanly():
     proc = _run_cli(["gtfs-export", str(SAMPLE), "--route", "NOPE"])
     assert proc.returncode == 2
     assert "error:" in proc.stderr
+
+
+def test_load_feed_route_filter_matches_full_load():
+    """The big-feed push-down must not change what gets built."""
+    full = load_feed(str(SAMPLE))
+    filtered = load_feed(str(SAMPLE), route_ids={"M1"})
+    # Trips outside the filter are gone, M1 trips identical.
+    assert {t["route_id"] for t in filtered.trips} == {"M1"}
+    m1_full = full.trips_for("M1", 0)
+    assert filtered.trips_for("M1", 0) == m1_full
+    for tid in m1_full:
+        assert filtered.stop_times[tid] == full.stop_times[tid]
+    # Stops/routes stay complete (labels, gtfs-info).
+    assert filtered.stops == full.stops
+    assert [r["route_id"] for r in filtered.routes] == [r["route_id"] for r in full.routes]

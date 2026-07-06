@@ -127,8 +127,15 @@ class GtfsFeed:
         return sorted(seen)
 
 
-def load_feed(directory: str) -> GtfsFeed:
-    """Parse the four core GTFS files from ``directory`` into a :class:`GtfsFeed`."""
+def load_feed(directory: str, route_ids: set[str] | None = None) -> GtfsFeed:
+    """Parse the four core GTFS files from ``directory`` into a :class:`GtfsFeed`.
+
+    ``route_ids`` is a memory push-down for big feeds (IDFM, national SNCF —
+    millions of ``stop_times`` rows): when given, only trips of those routes
+    are kept and ``stop_times.txt`` is streamed row by row, skipping every row
+    whose trip doesn't survive the filter. Routes/stops stay complete so
+    labels and ``gtfs-info`` keep working.
+    """
     if not os.path.isdir(directory):
         raise GtfsError(f"GTFS directory not found: {directory}")
     for fname in _CORE_FILES:
@@ -143,19 +150,31 @@ def load_feed(directory: str) -> GtfsFeed:
     _check_columns("routes.txt", routes)
     trips = _read_csv(os.path.join(directory, "trips.txt"))
     _check_columns("trips.txt", trips)
+    if route_ids is not None:
+        trips = [t for t in trips if t.get("route_id") in route_ids]
+    keep_trips: set[str] | None = None
+    if route_ids is not None:
+        keep_trips = {t["trip_id"] for t in trips}
 
-    stop_times_rows = _read_csv(os.path.join(directory, "stop_times.txt"))
-    _check_columns("stop_times.txt", stop_times_rows)
     stop_times: dict[str, list[tuple[int, str, float | None, float | None]]] = {}
-    for r in stop_times_rows:
-        tid = r["trip_id"]
-        try:
-            seq = int(r["stop_sequence"])
-        except (KeyError, ValueError):
-            continue
-        arr = parse_gtfs_time(r.get("arrival_time", ""))
-        dep = parse_gtfs_time(r.get("departure_time", ""))
-        stop_times.setdefault(tid, []).append((seq, r["stop_id"], arr, dep))
+    st_path = os.path.join(directory, "stop_times.txt")
+    with open(st_path, encoding="utf-8-sig", newline="") as fh:
+        reader = csv.DictReader(fh)
+        first = True
+        for r in reader:
+            if first:
+                _check_columns("stop_times.txt", [r])
+                first = False
+            tid = r["trip_id"]
+            if keep_trips is not None and tid not in keep_trips:
+                continue
+            try:
+                seq = int(r["stop_sequence"])
+            except (KeyError, ValueError):
+                continue
+            arr = parse_gtfs_time(r.get("arrival_time", ""))
+            dep = parse_gtfs_time(r.get("departure_time", ""))
+            stop_times.setdefault(tid, []).append((seq, r["stop_id"], arr, dep))
     for tid in stop_times:
         stop_times[tid].sort(key=lambda x: x[0])
 
@@ -220,7 +239,7 @@ class LineFromGtfs:
 
 def build_line_config(directory: str, route_id: str, direction_id: int = 0) -> LineFromGtfs:
     """Build a :class:`LineConfig` for one ``route_id``/``direction_id``."""
-    feed = load_feed(directory)
+    feed = load_feed(directory, route_ids={route_id})
     if route_id not in feed.route_ids():
         raise GtfsError(f"route_id '{route_id}' not in feed. Available: {feed.route_ids()}")
     trip_ids = feed.trips_for(route_id, direction_id)

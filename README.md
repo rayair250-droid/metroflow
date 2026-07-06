@@ -196,10 +196,15 @@ metroflow gtfs-export data/tisseo_gtfs --route line:61 --direction 0 \
     --out scenarios/toulouse_line_a.yaml
 ```
 
-### Real metro lines shipped as scenarios
+### Real lines shipped as scenarios
 
-Four ready-to-run scenarios were generated this way from real French open-data
-GTFS feeds (Licence ODbL, via [transport.data.gouv.fr](https://transport.data.gouv.fr)):
+Twelve ready-to-run scenarios were generated this way from real French
+open-data GTFS feeds (Licence ODbL, via
+[transport.data.gouv.fr](https://transport.data.gouv.fr)) — eight metro lines
+across four cities, plus four heavy-rail lines (RER, Intercités, TER) that
+stretch the simulator to ~70-minute end-to-end runs:
+
+**Metro**
 
 | Scenario | Line | Stations | Feed |
 |---|---|---|---|
@@ -207,14 +212,30 @@ GTFS feeds (Licence ODbL, via [transport.data.gouv.fr](https://transport.data.go
 | [`toulouse_line_b.yaml`](scenarios/toulouse_line_b.yaml) | Toulouse Métro **B** (Ramonville → Borderouge) | 20 | Réseau urbain Tisséo |
 | [`rennes_line_a.yaml`](scenarios/rennes_line_a.yaml) | Rennes Métro **a** (J.F. Kennedy → La Poterie) | 15 | Réseau urbain STAR |
 | [`rennes_line_b.yaml`](scenarios/rennes_line_b.yaml) | Rennes Métro **b** (Cesson-Viasilva → Saint-Jacques - Gaîté) | 15 | Réseau urbain STAR |
+| [`lyon_line_a.yaml`](scenarios/lyon_line_a.yaml) | Lyon Métro **A** (Perrache → Vaulx-en-Velin La Soie) | 14 | Réseau urbain TCL |
+| [`lyon_line_d.yaml`](scenarios/lyon_line_d.yaml) | Lyon Métro **D** (Gare de Vaise → Gare de Vénissieux) | 15 | Réseau urbain TCL |
+| [`lille_line_1.yaml`](scenarios/lille_line_1.yaml) | Lille Métro **1** (4 Cantons → CHU Eurasanté) | 18 | Réseau urbain ilévia |
+| [`lille_line_2.yaml`](scenarios/lille_line_2.yaml) | Lille Métro **2** (C.H. Dron → St. Philibert) | 44 | Réseau urbain ilévia |
+
+**Heavy rail** (much longer lines — RER A is Europe's busiest)
+
+| Scenario | Line | Stations | ~Run | Feed |
+|---|---|---|---|---|
+| [`rer_a.yaml`](scenarios/rer_a.yaml) | **RER A** (Marne-la-Vallée–Chessy → Cergy-le-Haut) | 27 | 72 min | SNCF Transilien |
+| [`rer_b.yaml`](scenarios/rer_b.yaml) | **RER B** (Aéroport CDG 2 → Saint-Rémy-lès-Chevreuse) | 40 | 73 min | SNCF Transilien |
+| [`intercites_paris_tours.yaml`](scenarios/intercites_paris_tours.yaml) | **Intercités** Paris Austerlitz → Tours | 10 | 74 min | Réseau SNCF TGV/IC/TER |
+| [`ter_marseille_hyeres.yaml`](scenarios/ter_marseille_hyeres.yaml) | **TER** Hyères → Marseille Saint-Charles | 17 | 66 min | Réseau SNCF TGV/IC/TER |
 
 ```bash
-metroflow compare --scenario scenarios/toulouse_line_a.yaml --seed 42
+metroflow compare --scenario scenarios/rer_b.yaml --seed 42
 ```
 
 Station lists and run-times in those files are timetable-derived; the demand
-profiles are **not** real ridership. `scenarios/paris_line1.yaml` remains a
-hand-calibrated approximation (see its header).
+profiles are **not** real ridership. For branched lines (RER A/B), MetroFlow
+models a single corridor: the export picks the feed's most complete trip, i.e.
+**one** branch combination — the scenario header names the exact termini.
+`scenarios/paris_line1.yaml` remains a hand-calibrated approximation (see its
+header).
 
 Real open-data sources (cited in `metroflow/gtfs.py`):
 
