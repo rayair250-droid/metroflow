@@ -271,32 +271,48 @@ The shipped RER scenarios use `rer_bidirectional`; the Intercités/TER ones use
 override the profile. These are plausible shapes for stress-testing dispatch
 strategies, **not** measured origin-destination data.
 
-### When does predictive injection help? (honest limits)
+### All four controllers on every real line (honest limits)
 
-Running the same stress test across the real lines (the hero-GIF overlay from
-`examples/generate_examples.py`: `rush_incident` demand intensity, incident
-rates and reserve pool applied to each scenario, seed 42) shows the strategy's
-domain — and its boundary:
+The same stress test (the hero-GIF overlay from `examples/generate_examples.py`:
+`rush_incident` demand intensity, incident rates and reserve pool applied to
+each scenario, seed 42), run with **all four controllers**. Values are total
+denied boardings — lower is better; the best per line is in **bold**.
+Reproduce with [`scripts/controller_grid.py`](scripts/controller_grid.py).
 
-| Line | Stations | Denied boardings: baseline → predictive |
-|---|---|---|
-| Lyon A | 14 | 9 899 → **8 083** (−18 %) |
-| Toulouse A | 18 | 14 783 → **11 937** (−19 %) |
-| Lille 1 | 18 | 15 359 → **13 456** (−12 %) |
-| Paris 14 | 21 | 17 857 → 17 717 (≈ neutral) |
-| RER B | 40 | 25 981 → 46 241 (**much worse**) |
-| Lille 2 | 44 | 31 047 → 31 735 (**worse**) |
-| HK Tramway | 54 | 22 567 → 52 123 (**far worse**) |
+| Line | St | baseline | reactive | predictive | optimizer |
+|---|--:|--:|--:|--:|--:|
+| Intercités P-Tours | 10 | **12 968** | 16 233 | 17 924 | 13 013 |
+| Lyon A | 14 | 9 899 | 9 384 | **8 083** | 9 019 |
+| Rennes a | 15 | 11 289 | **7 812** | 8 303 | 9 841 |
+| Rennes b | 15 | 11 478 | **9 487** | 11 177 | 10 909 |
+| Lyon D | 15 | 11 922 | **10 530** | 11 614 | 11 090 |
+| TER Marseille-Hyères | 17 | **19 773** | 29 349 | 30 479 | 25 034 |
+| Lille 1 | 18 | 15 359 | 13 465 | **13 456** | 14 492 |
+| Toulouse A | 18 | 14 783 | 13 094 | **11 937** | 13 674 |
+| Toulouse B | 20 | 15 128 | 16 228 | 15 543 | **14 591** |
+| Paris 14 | 21 | 17 857 | 16 013 | 17 717 | **15 983** |
+| RER A | 27 | **24 086** | 34 526 | 29 780 | 29 164 |
+| RER B | 40 | **25 981** | 51 268 | 46 241 | 43 582 |
+| Lille 2 | 44 | 31 047 | 30 853 | 31 735 | **30 257** |
+| HK Tramway | 54 | **22 567** | 51 728 | 52 123 | 38 278 |
 
-There is a clear station-count boundary. Depot-based reserve injection helps
-short and medium metro lines (≤ ~20 stations), where an injected train reaches
-the saturated stretch within the peak; around 21 stations (Paris 14) it turns
-neutral, and on long lines (40+ stations, ~70–80-minute end-to-end runs) a
-train injected at one terminus arrives at the far-side queues long after the
-peak — meanwhile it consumes line capacity and degrades headways, so it makes
-things **worse** than doing nothing (the 54-stop Hong Kong tramway is the
-extreme case). That is exactly the kind of boundary a simulator is for; fixing
-it (multiple injection points, short-turning) is future work, not a claim.
+Reading it:
+
+- **Short/medium metros (≤ ~20 stations)** — an *active* controller wins.
+  `predictive` (forecast + inject upstream) and `reactive` (inject once a queue
+  crosses the threshold) both beat doing nothing; which one wins depends on the
+  line's shape.
+- **Long lines (~27+ stations, ~70–80-minute runs)** — `baseline` (**never
+  inject**) is often best overall: a train injected at one terminus reaches the
+  far-side queues long after the peak while consuming line capacity and
+  degrading headways, so blind injection *hurts*.
+- **`optimizer` (MILP) is the robust one.** It rarely wins outright on short
+  lines, but it never blows up the way `reactive`/`predictive` do on long ones
+  (HK tramway: 38 278 vs 52 123) — because it can choose *not* to inject. That
+  is the value of an exact model over a heuristic.
+
+That crossover is exactly what a simulator is for. Beating it on long lines
+(multiple injection points, short-turning) is future work, not a claim.
 
 Real open-data sources (cited in `metroflow/gtfs.py`):
 
