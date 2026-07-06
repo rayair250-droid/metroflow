@@ -200,16 +200,18 @@ metroflow gtfs-export data/tisseo_gtfs --route line:61 --direction 0 \
 
 ### Real lines shipped as scenarios
 
-Twelve ready-to-run scenarios were generated this way from real French
-open-data GTFS feeds (Licence ODbL, via
-[transport.data.gouv.fr](https://transport.data.gouv.fr)) — eight metro lines
-across four cities, plus four heavy-rail lines (RER, Intercités, TER) that
-stretch the simulator to ~70-minute end-to-end runs:
+Fourteen ready-to-run scenarios were generated this way from real open-data
+GTFS feeds — nine metro lines (five cities, incl. the driverless Paris Line
+14), four heavy-rail lines (RER, Intercités, TER) reaching ~70-minute runs,
+and one Asian tramway. French feeds are Licence ODbL via
+[transport.data.gouv.fr](https://transport.data.gouv.fr); Hong Kong via
+[data.gov.hk](https://data.gov.hk).
 
 **Metro**
 
 | Scenario | Line | Stations | Feed |
 |---|---|---|---|
+| [`paris_line_14.yaml`](scenarios/paris_line_14.yaml) | Paris Métro **14** (Orly → Saint-Denis–Pleyel, fully automated) | 21 | IDFM |
 | [`toulouse_line_a.yaml`](scenarios/toulouse_line_a.yaml) | Toulouse Métro **A** (Basso Cambo → Balma-Gramont) | 18 | Réseau urbain Tisséo |
 | [`toulouse_line_b.yaml`](scenarios/toulouse_line_b.yaml) | Toulouse Métro **B** (Ramonville → Borderouge) | 20 | Réseau urbain Tisséo |
 | [`rennes_line_a.yaml`](scenarios/rennes_line_a.yaml) | Rennes Métro **a** (J.F. Kennedy → La Poterie) | 15 | Réseau urbain STAR |
@@ -218,6 +220,18 @@ stretch the simulator to ~70-minute end-to-end runs:
 | [`lyon_line_d.yaml`](scenarios/lyon_line_d.yaml) | Lyon Métro **D** (Gare de Vaise → Gare de Vénissieux) | 15 | Réseau urbain TCL |
 | [`lille_line_1.yaml`](scenarios/lille_line_1.yaml) | Lille Métro **1** (4 Cantons → CHU Eurasanté) | 18 | Réseau urbain ilévia |
 | [`lille_line_2.yaml`](scenarios/lille_line_2.yaml) | Lille Métro **2** (C.H. Dron → St. Philibert) | 44 | Réseau urbain ilévia |
+
+**Tramway** (Asia — a long street-running corridor)
+
+| Scenario | Line | Stations | ~Run | Feed |
+|---|---|---|---|---|
+| [`hongkong_tramway.yaml`](scenarios/hongkong_tramway.yaml) | **Hong Kong Tramways** (Shau Kei Wan → Kennedy Town) | 54 | 80 min | data.gov.hk |
+
+Hong Kong's MTR heavy-rail metro isn't in the free `data.gov.hk` feed (it's
+published separately, behind registration); the historic Hong Kong Tramways —
+one of the world's oldest tram systems — is, and it makes a genuine 54-stop,
+80-minute linear corridor. Station names are kept **verbatim** from the feed
+(including its own typos), like every generated scenario.
 
 **Heavy rail** (much longer lines — RER A is Europe's busiest)
 
@@ -266,20 +280,23 @@ domain — and its boundary:
 
 | Line | Stations | Denied boardings: baseline → predictive |
 |---|---|---|
+| Lyon A | 14 | 9 899 → **8 083** (−18 %) |
 | Toulouse A | 18 | 14 783 → **11 937** (−19 %) |
 | Lille 1 | 18 | 15 359 → **13 456** (−12 %) |
-| Lyon A | 14 | 9 899 → **8 083** (−18 %) |
-| Lille 2 | 44 | 31 047 → 31 735 (**worse**) |
+| Paris 14 | 21 | 17 857 → 17 717 (≈ neutral) |
 | RER B | 40 | 25 981 → 46 241 (**much worse**) |
+| Lille 2 | 44 | 31 047 → 31 735 (**worse**) |
+| HK Tramway | 54 | 22 567 → 52 123 (**far worse**) |
 
-Depot-based reserve injection helps short and medium metro lines, where an
-injected train reaches the saturated stretch within the peak. On long lines
-(40+ stations, ~70-minute end-to-end runs) a train injected at one terminus
-arrives at the far-side queues long after the peak — meanwhile it consumes
-line capacity and degrades headways, so it can make things **worse** than
-doing nothing. That is exactly the kind of boundary a simulator is for;
-fixing it (multiple injection points, short-turning) is future work, not a
-claim.
+There is a clear station-count boundary. Depot-based reserve injection helps
+short and medium metro lines (≤ ~20 stations), where an injected train reaches
+the saturated stretch within the peak; around 21 stations (Paris 14) it turns
+neutral, and on long lines (40+ stations, ~70–80-minute end-to-end runs) a
+train injected at one terminus arrives at the far-side queues long after the
+peak — meanwhile it consumes line capacity and degrades headways, so it makes
+things **worse** than doing nothing (the 54-stop Hong Kong tramway is the
+extreme case). That is exactly the kind of boundary a simulator is for; fixing
+it (multiple injection points, short-turning) is future work, not a claim.
 
 Real open-data sources (cited in `metroflow/gtfs.py`):
 
