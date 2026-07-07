@@ -378,12 +378,15 @@ class Simulation:
         )
         if train is None:
             return False
+        # Take the reserve out of the pool now (so it can't be picked twice),
+        # but it does NOT teleport into service: it dead-heads (runs empty) from
+        # the depot to the injection station and only starts carrying passengers
+        # on arrival. This is why injection helps less on long lines — the
+        # reserve reaches a far hotspot only after a real travel delay.
         train.state = TrainState.IN_SERVICE
-        train.position = cmd.station
-        train.direction = cmd.direction
         train.clear()
-        train.set_stationary(self.line.station_coord[cmd.station], self.env.now)
         train.was_injected = True
+        train.position = self.line.depot_station
         self._last_injection_time = self.env.now
         self.metrics.record_injection(
             InjectionRecord(
@@ -393,8 +396,29 @@ class Simulation:
                 reason=cmd.reason,
             )
         )
-        self.env.process(self._train_process(train, start_delay=0.0))
+        self.env.process(self._deadhead_then_serve(train, cmd.station, cmd.direction))
         return True
+
+    def _deadhead_then_serve(self, train: Train, target: int, direction: int):
+        """Run a just-injected reserve empty from the depot to ``target``, then
+        begin revenue service there. Travel time mirrors ``_return_to_depot``
+        (station distance x mean segment time), so a reserve cannot teleport."""
+        env = self.env
+        depot = self.line.depot_station
+        if target != depot:
+            mean_seg = sum(self.line.segment_times) / len(self.line.segment_times)
+            tt = max(30.0, abs(target - depot) * mean_seg)
+            train.set_moving(
+                self.line.station_coord[depot],
+                self.line.station_coord[target],
+                env.now,
+                env.now + tt,
+            )
+            yield env.timeout(tt)
+        train.position = target
+        train.direction = direction
+        train.set_stationary(self.line.station_coord[target], env.now)
+        yield from self._train_process(train, start_delay=0.0)
 
     def inject_now(self, station: int, direction: int, reason: str = "manual") -> bool:
         """Public helper (tests / scripting) to force an injection."""

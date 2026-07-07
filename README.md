@@ -279,37 +279,46 @@ each scenario, seed 42), run with **all four controllers**. Values are total
 denied boardings — lower is better; the best per line is in **bold**.
 Reproduce with [`scripts/controller_grid.py`](scripts/controller_grid.py).
 
+A reserve does **not** teleport: when a controller injects, the train
+dead-heads (runs empty) out of the depot and only starts carrying passengers
+when it *arrives* at the target station (`_deadhead_then_serve` in
+`simulation.py`). So an injection near a far hotspot pays a real travel delay —
+which is exactly why the strategy's value collapses on long lines.
+
 | Line | St | baseline | reactive | predictive | optimizer |
 |---|--:|--:|--:|--:|--:|
-| Intercités P-Tours | 10 | **12 968** | 16 233 | 17 924 | 13 013 |
-| Lyon A | 14 | 9 899 | 9 384 | **8 083** | 9 019 |
-| Rennes a | 15 | 11 289 | **7 812** | 8 303 | 9 841 |
-| Rennes b | 15 | 11 478 | **9 487** | 11 177 | 10 909 |
-| Lyon D | 15 | 11 922 | **10 530** | 11 614 | 11 090 |
-| TER Marseille-Hyères | 17 | **19 773** | 29 349 | 30 479 | 25 034 |
-| Lille 1 | 18 | 15 359 | 13 465 | **13 456** | 14 492 |
-| Toulouse A | 18 | 14 783 | 13 094 | **11 937** | 13 674 |
-| Toulouse B | 20 | 15 128 | 16 228 | 15 543 | **14 591** |
-| Paris 14 | 21 | 17 857 | 16 013 | 17 717 | **15 983** |
-| RER A | 27 | **24 086** | 34 526 | 29 780 | 29 164 |
-| RER B | 40 | **25 981** | 51 268 | 46 241 | 43 582 |
-| Lille 2 | 44 | 31 047 | 30 853 | 31 735 | **30 257** |
-| HK Tramway | 54 | **22 567** | 51 728 | 52 123 | 38 278 |
+| Intercités P-Tours | 10 | **12 968** | 14 224 | 14 091 | 16 913 |
+| Lyon A | 14 | 9 899 | 9 806 | 9 154 | **8 538** |
+| Rennes a | 15 | 11 289 | 9 649 | **8 978** | 9 956 |
+| Rennes b | 15 | 11 478 | 10 632 | 10 855 | **10 438** |
+| Lyon D | 15 | 11 922 | 11 157 | **9 823** | 11 534 |
+| TER Marseille-Hyères | 17 | **19 773** | 25 044 | 23 795 | 32 168 |
+| Lille 1 | 18 | 15 359 | 14 143 | **14 094** | 14 577 |
+| Toulouse A | 18 | 14 783 | 14 185 | **13 156** | 13 842 |
+| Toulouse B | 20 | 15 128 | **15 120** | 16 868 | 15 424 |
+| Paris 14 | 21 | 17 857 | **17 163** | 17 731 | 19 105 |
+| RER A | 27 | **24 086** | 31 565 | 27 370 | 33 056 |
+| RER B | 40 | **25 981** | 36 137 | 29 786 | 35 416 |
+| Lille 2 | 44 | **31 047** | 37 228 | 35 394 | 38 958 |
+| HK Tramway | 54 | 22 567 | **22 337** | 45 548 | 32 260 |
 
 Reading it:
 
-- **Short/medium metros (≤ ~20 stations)** — an *active* controller wins.
-  `predictive` (forecast + inject upstream) and `reactive` (inject once a queue
-  crosses the threshold) both beat doing nothing; which one wins depends on the
-  line's shape.
-- **Long lines (~27+ stations, ~70–80-minute runs)** — `baseline` (**never
-  inject**) is often best overall: a train injected at one terminus reaches the
-  far-side queues long after the peak while consuming line capacity and
-  degrading headways, so blind injection *hurts*.
-- **`optimizer` (MILP) is the robust one.** It rarely wins outright on short
-  lines, but it never blows up the way `reactive`/`predictive` do on long ones
-  (HK tramway: 38 278 vs 52 123) — because it can choose *not* to inject. That
-  is the value of an exact model over a heuristic.
+- **Short/medium metros (≤ ~21 stations)** — an *active* controller wins.
+  `predictive` (forecast + inject ahead of a building queue) is the most
+  consistent winner (Rennes a, Lyon D, Lille 1, Toulouse A); `reactive` and
+  `optimizer` take the odd line depending on its shape.
+- **Long lines (27+ stations, ~70–80-minute runs)** — `baseline` (**never
+  inject**) wins outright, by a wide margin. A reserve dead-heading from the
+  depot reaches a far hotspot only *after* the peak, so it adds capacity where
+  the bottleneck no longer is and disrupts headways on the way — blind
+  injection strictly *hurts*.
+- **The `optimizer` (MILP) is only as good as its model's assumptions.** Its
+  plan is computed as if injection were instant; once the real dead-head delay
+  is in the loop, that plan arrives late and it *over-commits* — on the two
+  longest single-corridor rail lines it is the **worst** controller (TER 32 168,
+  Intercités 16 913). A neat, honest reminder that an exact optimizer inherits
+  every simplification baked into its model.
 
 That crossover is exactly what a simulator is for. Beating it on long lines
 (multiple injection points, short-turning) is future work, not a claim.
